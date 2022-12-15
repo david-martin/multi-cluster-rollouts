@@ -1,0 +1,6 @@
+domain: example.com
+layout:
+- go.kubebuilder.io/v4-alpha
+projectName: multi-cluster-rollouts
+repo: github.com/david-martin/multi-cluster-rollouts
+version: "3"
