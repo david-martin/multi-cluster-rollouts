@@ -5,4 +5,7 @@ An experiment at providing rollout like features in a multi-cluster environment.
 
 ```
 make argocd-setup
+make argocd-start-target-clusters
+make argocd-register-target-clusters
+make argocd-create-example-applicationset
 ```
