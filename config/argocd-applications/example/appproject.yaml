@@ -2,7 +2,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: example-glbc-project
+  name: example-project
 spec:
   destinations:
   - namespace: '*'

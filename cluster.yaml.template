@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: $CLUSTER_NAME
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+type: Opaque
+stringData:
+  name: $CLUSTER_NAME
+  server: $CLUSTER_SERVER
+  config: |
+    {
+      "tlsClientConfig": {
+        "insecure": false,
+        "caData": "$CADATA",
+        "certData": "$CERTDATA",
+        "keyData": "$KEYDATA"
+      }
+    }

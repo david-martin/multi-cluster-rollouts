@@ -20,17 +20,33 @@ $(KIND):
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kind@$(KIND_VERSION)
 
 ARGOCD_KUBECONFIG ?= $(SELF_DIR)/kubeconfig
+export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-start: kind
-	KUBECONFIG=$(ARGOCD_KUBECONFIG) $(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
+	$(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
 	@make -s argocd-setup
+
+argocd-start-target-clusters: kind
+	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
+
+argocd-register-target-clusters: kustomize
+	kind get kubeconfig --internal --name argocd-target-cluster-01 > argocd-target-cluster-01.kubeconfig
+	CLUSTER_NAME=argocd-target-cluster-01 \
+		CLUSTER_SERVER=https://argocd-target-cluster-01-control-plane:6443 KEYDATA=$(shell cat argocd-target-cluster-01.kubeconfig | yq '.users[0].user.client-key-data') CADATA=$(shell cat argocd-target-cluster-01.kubeconfig | yq '.clusters[0].cluster.certificate-authority-data') CERTDATA=$(shell cat argocd-target-cluster-01.kubeconfig | yq '.users[0].user.client-certificate-data') envsubst < cluster.yaml.template > cluster.yaml
+	kubectl --context kind-argocd -n argocd apply -f cluster.yaml
+#	$(KUSTOMIZE) build config/argocd-clusters/roles/ | kubectl --context kind-argocd-target-cluster-01 apply -n default -f -
+#	kubectl --context kind-argocd-target-cluster-01 get serviceaccount argocd-manager -n default -o=jsonpath='{.secrets[0].name}' | xargs kubectl get secret -n default -o=json > cluster.json
+
+argocd-create-example-applicationset:
+	$(KUSTOMIZE) build config/argocd-applications/example | kubectl --context kind-argocd -n argocd apply -f - 
 
 argocd-stop:
 	$(KIND) delete cluster --name=argocd || true
+	$(KIND) delete cluster --name=argocd-target-cluster-01 || true
 
 argocd-clean:
 	rm -rf $(SELF_DIR)kubeconfig $(SELF_DIR)bin
 
-ARGOCD_PASSWD = $(shell kubectl --kubeconfig=$(ARGOCD_KUBECONFIG) -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
+ARGOCD_PASSWD = $(shell kubectl --kubeconfig=$(ARGOCD_KUBECONFIG) --context kind-argocd -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d)
 argocd-password:
 	@echo $(ARGOCD_PASSWD)
 

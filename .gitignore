@@ -16,3 +16,8 @@
 
 kubeconfig
 install_kustomize.sh
+cluster.json
+cluster.yaml
+*.kubeconfig
+
+bin/*

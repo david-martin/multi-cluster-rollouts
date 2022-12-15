@@ -1,24 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: example-glbc-application
+  name: example-application
 spec:
   generators:
   - clusters: {}
   template:
     metadata:
-      name: '{{name}}-example-glbc-application'
+      name: '{{name}}-example-application'
     spec:
       destination:
         name: '{{name}}'
-        namespace: example-glbc-application
-      project: example-glbc-project
+        namespace: example-application
+      project: example-project
       source:
-        # TODO: Change this to glbc repo when manifests folder changes land there
-        repoURL: https://github.com/roivaz/kcp-glbc.git
-        targetRevision: argocd-glbc-plugin
-        path: argocd-glbc-plugin/manifests/test-app
-        plugin: {}
+        repoURL: https://github.com/david-martin/argocd-test-app.git
+        targetRevision: main
+        path: argocd-test-ingress-ignoredifferences
       syncPolicy:
         syncOptions:
         - CreateNamespace=true
