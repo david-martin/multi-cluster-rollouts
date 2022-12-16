@@ -39,7 +39,7 @@ argocd-register-target-clusters: kustomize
 argocd-create-example-applicationset:
 	$(KUSTOMIZE) build config/argocd-applications/example | kubectl --context kind-argocd -n argocd apply -f - 
 
-argocd-stop:
+argocd-stop: kind
 	$(KIND) delete cluster --name=argocd || true
 	$(KIND) delete cluster --name=argocd-target-cluster-01 || true
 
