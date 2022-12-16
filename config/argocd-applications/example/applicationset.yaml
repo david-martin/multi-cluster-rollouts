@@ -19,7 +19,7 @@ spec:
       source:
         repoURL: https://github.com/david-martin/argocd-test-app.git
         targetRevision: main
-        path: argocd-test-ingress-ignoredifferences
+        path: argocd-test-multi-cluster-ingress
       syncPolicy:
         automated:
           prune: true

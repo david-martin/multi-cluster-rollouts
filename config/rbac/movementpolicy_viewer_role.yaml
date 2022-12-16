@@ -1,0 +1,27 @@
+# permissions for end users to view movementpolicies.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/name: clusterrole
+    app.kubernetes.io/instance: movementpolicy-viewer-role
+    app.kubernetes.io/component: rbac
+    app.kubernetes.io/created-by: multi-cluster-rollouts
+    app.kubernetes.io/part-of: multi-cluster-rollouts
+    app.kubernetes.io/managed-by: kustomize
+  name: movementpolicy-viewer-role
+rules:
+- apiGroups:
+  - rollouts.example.com
+  resources:
+  - movementpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - rollouts.example.com
+  resources:
+  - movementpolicies/status
+  verbs:
+  - get

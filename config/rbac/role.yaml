@@ -34,6 +34,32 @@ rules:
 - apiGroups:
   - rollouts.example.com
   resources:
+  - movementpolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rollouts.example.com
+  resources:
+  - movementpolicies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rollouts.example.com
+  resources:
+  - movementpolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rollouts.example.com
+  resources:
   - placements
   verbs:
   - create
