@@ -8,6 +8,32 @@ rules:
 - apiGroups:
   - rollouts.example.com
   resources:
+  - clusters
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - rollouts.example.com
+  resources:
+  - clusters/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - rollouts.example.com
+  resources:
+  - clusters/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - rollouts.example.com
+  resources:
   - placements
   verbs:
   - create

@@ -28,14 +28,28 @@ type PlacementSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Placement. Edit placement_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Static list of ArgoCD clusters
+	Clusters []string `json:"clusters,omitempty"`
 }
 
 // PlacementStatus defines the observed state of Placement
 type PlacementStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// Decisions is a slice of decisions according to a placement
+	// +kubebuilder:validation:Required
+	// +required
+	Decisions []ClusterDecision `json:"decisions"`
+}
+
+// ClusterDecision represents a decision from a placement
+// An empty ClusterDecision indicates it is not scheduled yet.
+type ClusterDecision struct {
+	// ClusterName is the name of the ArgoCD cluster.
+	// +kubebuilder:validation:Required
+	// +required
+	ClusterName string `json:"clusterName"`
 }
 
 //+kubebuilder:object:root=true

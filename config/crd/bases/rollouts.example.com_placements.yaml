@@ -35,13 +35,30 @@ spec:
           spec:
             description: PlacementSpec defines the desired state of Placement
             properties:
-              foo:
-                description: Foo is an example field of Placement. Edit placement_types.go
-                  to remove/update
-                type: string
+              clusters:
+                description: Static list of ArgoCD clusters
+                items:
+                  type: string
+                type: array
             type: object
           status:
             description: PlacementStatus defines the observed state of Placement
+            properties:
+              decisions:
+                description: Decisions is a slice of decisions according to a placement
+                items:
+                  description: ClusterDecision represents a decision from a placement
+                    An empty ClusterDecision indicates it is not scheduled yet.
+                  properties:
+                    clusterName:
+                      description: ClusterName is the name of the ArgoCD cluster.
+                      type: string
+                  required:
+                  - clusterName
+                  type: object
+                type: array
+            required:
+            - decisions
             type: object
         type: object
     served: true
