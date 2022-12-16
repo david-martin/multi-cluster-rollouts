@@ -13,4 +13,9 @@ resources:
   kind: Placement
   path: github.com/david-martin/multi-cluster-rollouts/api/v1alpha1
   version: v1alpha1
+- controller: true
+  domain: example.com
+  group: rollouts
+  kind: Cluster
+  version: v1alpha1
 version: "3"
