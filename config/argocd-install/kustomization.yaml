@@ -17,3 +17,19 @@ patches:
         name: argocd-rbac-cm
       data:
         policy.default: role:admin
+patchesJSON6902:
+  - target:
+      kind: Role
+      name: argocd-applicationset-controller
+      group: rbac.authorization.k8s.io
+      version: v1
+    patch: |-
+      - op: add
+        path: /rules/-
+        value:
+          apiGroups:
+          - "rollouts.example.com"
+          resources:
+          - placements
+          verbs:
+          - list

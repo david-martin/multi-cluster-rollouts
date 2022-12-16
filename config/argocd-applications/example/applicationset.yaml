@@ -4,7 +4,10 @@ metadata:
   name: example-application
 spec:
   generators:
-  - clusters: {}
+  - clusterDecisionResource:
+      configMapRef: mcr-placement
+      name: example
+      requeueAfterSeconds: 10
   template:
     metadata:
       name: '{{name}}-example-application'
@@ -18,5 +21,7 @@ spec:
         targetRevision: main
         path: argocd-test-ingress-ignoredifferences
       syncPolicy:
+        automated:
+          prune: true
         syncOptions:
         - CreateNamespace=true

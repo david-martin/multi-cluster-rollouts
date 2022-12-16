@@ -47,9 +47,34 @@ type PlacementReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.1/pkg/reconcile
 func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// Fetch the Placement
+	var placement rolloutsv1alpha1.Placement
+	if err := r.Get(ctx, req.NamespacedName, &placement); err != nil {
+		log.Error(err, "unable to fetch Placement")
+		// we'll ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification), and we can get them
+		// on deleted requests.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	// Update status with decisions
+	clusterDecisions := []rolloutsv1alpha1.ClusterDecision{}
+	for _, cluster := range placement.Spec.Clusters {
+		clusterDecision := rolloutsv1alpha1.ClusterDecision{
+			ClusterName: cluster,
+		}
+		clusterDecisions = append(clusterDecisions, clusterDecision)
+	}
+	placement.Status = rolloutsv1alpha1.PlacementStatus{
+		Decisions: clusterDecisions,
+	}
+
+	if err := r.Status().Update(ctx, &placement); err != nil {
+		log.Error(err, "unable to update Placement status")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

@@ -3,3 +3,5 @@ namespace: argocd
 resources:
   - applicationset.yaml
   - appproject.yaml
+  - placement-configmap.yaml
+  - placement.yaml

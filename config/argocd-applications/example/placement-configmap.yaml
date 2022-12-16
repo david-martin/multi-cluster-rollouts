@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcr-placement
+data:
+  # apiVersion of the target resource
+  apiVersion: rollouts.example.com/v1alpha1
+  # kind of the target resource
+  kind: placements
+  # status key name that holds the list of Argo CD clusters
+  statusListKey: decisions
+  # The key in the status list whose value is the cluster name found in Argo CD
+  matchKey: clusterName
