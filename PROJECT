@@ -3,4 +3,14 @@ layout:
 - go.kubebuilder.io/v4-alpha
 projectName: multi-cluster-rollouts
 repo: github.com/david-martin/multi-cluster-rollouts
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: example.com
+  group: rollouts
+  kind: Placement
+  path: github.com/david-martin/multi-cluster-rollouts/api/v1alpha1
+  version: v1alpha1
 version: "3"
