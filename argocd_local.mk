@@ -13,6 +13,7 @@ KIND ?= $(LOCALBIN)/kind
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.4
 KIND_VERSION ?= v0.14.0
+NGINX_CONTOLLER_VERSION=controller-v1.2.1
 
 .PHONY: kind
 kind: $(KIND) ## Download kind locally if necessary.
@@ -23,10 +24,22 @@ ARGOCD_KUBECONFIG ?= $(SELF_DIR)/kubeconfig
 export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-start: kind
 	$(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
+# TODO de-dupe
+	curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/"${NGINX_CONTOLLER_VERSION}"/deploy/static/provider/kind/deploy.yaml | sed "s/--publish-status-address=localhost/--report-node-internal-ip-address/g" | kubectl --context kind-argocd apply -f -
+	kubectl --context kind-argocd annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
+	@echo "Waiting for deployments to be ready ..."
+	kubectl --context kind-argocd -n ingress-nginx wait --timeout=300s --for=condition=Available deployments --all
 	@make -s argocd-setup
+	@make argocd-start-target-clusters
+	@make argocd-register-target-clusters
 
 argocd-start-target-clusters: kind
 	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
+# TODO de-dupe
+	curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/"${NGINX_CONTOLLER_VERSION}"/deploy/static/provider/kind/deploy.yaml | sed "s/--publish-status-address=localhost/--report-node-internal-ip-address/g" | kubectl --context kind-argocd-target-cluster-01 apply -f -
+	kubectl --context kind-argocd-target-cluster-01 annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
+	@echo "Waiting for deployments to be ready ..."
+    kubectl --context kind-argocd-target-cluster-01 -n ingress-nginx wait --timeout=300s --for=condition=Available deployments --all
 
 argocd-register-target-clusters: kustomize
 	kind get kubeconfig --internal --name argocd-target-cluster-01 > argocd-target-cluster-01.kubeconfig
@@ -58,8 +71,8 @@ argocd-setup: kustomize
 	$(KUSTOMIZE) build $(SELF_DIR)config/argocd-install | $(KFILT) -i kind=CustomResourceDefinition | kubectl apply -f -
 	$(KUSTOMIZE) build $(SELF_DIR)config/argocd-install | kubectl apply -f -
 	kubectl -n argocd wait deployment argocd-server --for condition=Available=True --timeout=90s
-	kubectl port-forward svc/argocd-server -n argocd 8443:443 > /dev/null  2>&1 &
-	@echo -ne "\n\n\tConnect to ArgoCD UI in https://localhost:8443\n\n"
+	kubectl port-forward svc/argocd-server -n argocd 8444:443 > /dev/null  2>&1 &
+	@echo -ne "\n\n\tConnect to ArgoCD UI in https://localhost:8444\n\n"
 	@echo -ne "\t\tUser: admin\n"
 	@echo -ne "\t\tPassword: "
 	@make -s argocd-password
