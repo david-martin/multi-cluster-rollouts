@@ -27,36 +27,45 @@ import (
 	rolloutsv1alpha1 "github.com/david-martin/multi-cluster-rollouts/api/v1alpha1"
 )
 
-// MovementPolicyReconciler reconciles a MovementPolicy object
-type MovementPolicyReconciler struct {
+// AnalysisTemplateReconciler reconciles a AnalysisTemplate object
+type AnalysisTemplateReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=rollouts.example.com,resources=movementpolicies,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rollouts.example.com,resources=movementpolicies/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=rollouts.example.com,resources=movementpolicies/finalizers,verbs=update
+//+kubebuilder:rbac:groups=rollouts.example.com,resources=analysistemplates,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rollouts.example.com,resources=analysistemplates/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=rollouts.example.com,resources=analysistemplates/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the MovementPolicy object against the actual cluster state, and then
+// the AnalysisTemplate object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.1/pkg/reconcile
-func (r *MovementPolicyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *AnalysisTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// Fetch the AnalysisTemplate
+	var analysisTemplate rolloutsv1alpha1.AnalysisTemplate
+	if err := r.Get(ctx, req.NamespacedName, &analysisTemplate); err != nil {
+		log.Error(err, "unable to fetch AnalysisTemplate")
+		// we'll ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification), and we can get them
+		// on deleted requests.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *MovementPolicyReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AnalysisTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&rolloutsv1alpha1.MovementPolicy{}).
+		For(&rolloutsv1alpha1.AnalysisTemplate{}).
 		Complete(r)
 }

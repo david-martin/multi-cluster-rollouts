@@ -1,12 +1,12 @@
 apiVersion: rollouts.example.com/v1alpha1
-kind: MovementPolicy
+kind: AnalysisTemplate
 metadata:
-  name: example
+  name: example-ready-analysis
 spec:
-  strategy:
-    unscheduleCondition: result[0] < 1
+  metric:
+    successCondition: result[0] > 0
     provider:
       prometheus:
         address: http://prometheus.example.com:9090
         query: |
-           rate(nginx_http_requests_total[5m])
+          rate(nginx_http_requests_total[5m])

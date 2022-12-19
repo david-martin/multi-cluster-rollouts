@@ -1,0 +1,12 @@
+apiVersion: rollouts.example.com/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: example-ready-analysis
+spec:
+  metric:
+    successCondition: result[0] > 0
+    provider:
+      prometheus:
+        address: http://prometheus.example.com:9090
+        query: |
+          rate(nginx_http_requests_total[5m])

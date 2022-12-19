@@ -23,39 +23,49 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	rolloutsv1alpha1 "github.com/david-martin/multi-cluster-rollouts/api/v1alpha1"
 )
 
-// ClusterReconciler reconciles a Cluster object
-type ClusterReconciler struct {
+// AnalysisRunReconciler reconciles a AnalysisRun object
+type AnalysisRunReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=rollouts.example.com,resources=clusters,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=rollouts.example.com,resources=clusters/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=rollouts.example.com,resources=clusters/finalizers,verbs=update
+//+kubebuilder:rbac:groups=rollouts.example.com,resources=analysisruns,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=rollouts.example.com,resources=analysisruns/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=rollouts.example.com,resources=analysisruns/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Cluster object against the actual cluster state, and then
+// the AnalysisRun object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.1/pkg/reconcile
-func (r *ClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *AnalysisRunReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// Fetch the AnalysisRun
+	var analysisRun rolloutsv1alpha1.AnalysisRun
+	if err := r.Get(ctx, req.NamespacedName, &analysisRun); err != nil {
+		log.Error(err, "unable to fetch AnalysisRun")
+		// we'll ignore not-found errors, since they can't be fixed by an immediate
+		// requeue (we'll need to wait for a new notification), and we can get them
+		// on deleted requests.
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun)
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *AnalysisRunReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		// Uncomment the following line adding a pointer to an instance of the controlled resource as an argument
-		// For().
+		For(&rolloutsv1alpha1.AnalysisRun{}).
 		Complete(r)
 }

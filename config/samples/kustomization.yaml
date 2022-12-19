@@ -1,5 +1,6 @@
 ## Append samples of your project ##
 resources:
 - rollouts_v1alpha1_placement.yaml
-- rollouts_v1alpha1_movementpolicy.yaml
+- rollouts_v1alpha1_analysistemplate.yaml
+- rollouts_v1alpha1_analysisrun.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

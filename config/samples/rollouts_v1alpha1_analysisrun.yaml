@@ -1,12 +1,12 @@
 apiVersion: rollouts.example.com/v1alpha1
-kind: MovementPolicy
+kind: AnalysisRun
 metadata:
   labels:
-    app.kubernetes.io/name: movementpolicy
-    app.kubernetes.io/instance: movementpolicy-sample
+    app.kubernetes.io/name: analysisrun
+    app.kubernetes.io/instance: analysisrun-sample
     app.kubernetes.io/part-of: multi-cluster-rollouts
     app.kubernetes.io/managed-by: kustomize
     app.kubernetes.io/created-by: multi-cluster-rollouts
-  name: movementpolicy-sample
+  name: analysisrun-sample
 spec:
   # TODO(user): Add fields here

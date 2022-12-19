@@ -18,8 +18,12 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -77,6 +81,18 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		}
 		if !slices.Contains(existingClusterDecisions, cluster) {
 			log.Info("Cluster will be added to decisions", "cluster", cluster)
+			if placement.Spec.ReadyAnalysis != "" {
+				log.Info("Creating AnalysisRun", "cluster", cluster, "analysisTemplate", placement.Spec.ReadyAnalysis)
+				analysisTemplateNamespacedName := types.NamespacedName{
+					Namespace: placement.Namespace,
+					Name:      placement.Spec.ReadyAnalysis,
+				}
+				err := r.createAnalysisRun(ctx, analysisTemplateNamespacedName)
+				if err != nil {
+					log.Error(err, "unable to create AnalysisRun")
+					return ctrl.Result{}, err
+				}
+			}
 		}
 		clusterDecisions = append(clusterDecisions, clusterDecision)
 	}
@@ -91,6 +107,28 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *PlacementReconciler) createAnalysisRun(ctx context.Context, analysisTemplateNamespacedName types.NamespacedName) error {
+	var analysisTemplate rolloutsv1alpha1.AnalysisTemplate
+	if err := r.Get(ctx, analysisTemplateNamespacedName, &analysisTemplate); err != nil {
+		return err
+	}
+
+	analysisRun := rolloutsv1alpha1.AnalysisRun{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%d", analysisTemplate.ObjectMeta.Name, time.Now().Unix()),
+			Namespace: analysisTemplate.ObjectMeta.Namespace,
+		},
+		Spec: rolloutsv1alpha1.AnalysisRunSpec{
+			Metric: analysisTemplate.Spec.Metric,
+		},
+	}
+
+	if err := r.Client.Create(ctx, &analysisRun); err != nil {
+		return err
+	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.

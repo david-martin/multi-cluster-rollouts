@@ -5,3 +5,4 @@ resources:
   - appproject.yaml
   - placement-configmap.yaml
   - placement.yaml
+  - analysistemplate-ready.yaml

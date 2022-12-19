@@ -5,3 +5,5 @@ metadata:
 spec:
   clusters:
   - argocd-target-cluster-01
+  # removeCondition: example-removepolicy
+  readyAnalysis: example-ready-analysis

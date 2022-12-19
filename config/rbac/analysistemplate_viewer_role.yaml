@@ -1,31 +1,27 @@
-# permissions for end users to edit movementpolicies.
+# permissions for end users to view analysistemplates.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: movementpolicy-editor-role
+    app.kubernetes.io/instance: analysistemplate-viewer-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: multi-cluster-rollouts
     app.kubernetes.io/part-of: multi-cluster-rollouts
     app.kubernetes.io/managed-by: kustomize
-  name: movementpolicy-editor-role
+  name: analysistemplate-viewer-role
 rules:
 - apiGroups:
   - rollouts.example.com
   resources:
-  - movementpolicies
+  - analysistemplates
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - rollouts.example.com
   resources:
-  - movementpolicies/status
+  - analysistemplates/status
   verbs:
   - get

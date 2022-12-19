@@ -24,7 +24,16 @@ resources:
   controller: true
   domain: example.com
   group: rollouts
-  kind: MovementPolicy
+  kind: AnalysisTemplate
+  path: github.com/david-martin/multi-cluster-rollouts/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: example.com
+  group: rollouts
+  kind: AnalysisRun
   path: github.com/david-martin/multi-cluster-rollouts/api/v1alpha1
   version: v1alpha1
 version: "3"

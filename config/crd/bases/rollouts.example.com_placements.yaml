@@ -40,6 +40,10 @@ spec:
                 items:
                   type: string
                 type: array
+              readyAnalysis:
+                description: Name of AnalysisTemplate for analysing if the placement
+                  of an Application is ready
+                type: string
             type: object
           status:
             description: PlacementStatus defines the observed state of Placement

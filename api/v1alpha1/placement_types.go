@@ -30,6 +30,9 @@ type PlacementSpec struct {
 
 	// Static list of ArgoCD clusters
 	Clusters []string `json:"clusters,omitempty"`
+
+	// Name of AnalysisTemplate for analysing if the placement of an Application is ready
+	ReadyAnalysis string `json:"readyAnalysis,omitempty"`
 }
 
 // PlacementStatus defines the observed state of Placement

@@ -1,0 +1,12 @@
+apiVersion: rollouts.example.com/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  labels:
+    app.kubernetes.io/name: analysistemplate
+    app.kubernetes.io/instance: analysistemplate-sample
+    app.kubernetes.io/part-of: multi-cluster-rollouts
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: multi-cluster-rollouts
+  name: analysistemplate-sample
+spec:
+  # TODO(user): Add fields here

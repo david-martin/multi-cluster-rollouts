@@ -8,7 +8,7 @@ rules:
 - apiGroups:
   - rollouts.example.com
   resources:
-  - clusters
+  - analysisruns
   verbs:
   - create
   - delete
@@ -20,13 +20,13 @@ rules:
 - apiGroups:
   - rollouts.example.com
   resources:
-  - clusters/finalizers
+  - analysisruns/finalizers
   verbs:
   - update
 - apiGroups:
   - rollouts.example.com
   resources:
-  - clusters/status
+  - analysisruns/status
   verbs:
   - get
   - patch
@@ -34,7 +34,7 @@ rules:
 - apiGroups:
   - rollouts.example.com
   resources:
-  - movementpolicies
+  - analysistemplates
   verbs:
   - create
   - delete
@@ -46,13 +46,13 @@ rules:
 - apiGroups:
   - rollouts.example.com
   resources:
-  - movementpolicies/finalizers
+  - analysistemplates/finalizers
   verbs:
   - update
 - apiGroups:
   - rollouts.example.com
   resources:
-  - movementpolicies/status
+  - analysistemplates/status
   verbs:
   - get
   - patch

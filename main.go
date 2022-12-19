@@ -96,11 +96,18 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Placement")
 		os.Exit(1)
 	}
-	if err = (&controllers.MovementPolicyReconciler{
+	if err = (&controllers.AnalysisTemplateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "MovementPolicy")
+		setupLog.Error(err, "unable to create controller", "controller", "AnalysisTemplate")
+		os.Exit(1)
+	}
+	if err = (&controllers.AnalysisRunReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AnalysisRun")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
