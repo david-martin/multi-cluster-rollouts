@@ -20,6 +20,7 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -60,13 +61,26 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Update status with decisions
+	existingClusters := placement.Spec.Clusters
+	existingClusterDecisions := []string{}
+	for _, ecd := range placement.Status.Decisions {
+		if !slices.Contains(existingClusters, ecd.ClusterName) {
+			log.Info("Cluster will be removed from decisions", "cluster", ecd.ClusterName)
+		}
+		existingClusterDecisions = append(existingClusterDecisions, ecd.ClusterName)
+	}
+
 	clusterDecisions := []rolloutsv1alpha1.ClusterDecision{}
-	for _, cluster := range placement.Spec.Clusters {
+	for _, cluster := range existingClusters {
 		clusterDecision := rolloutsv1alpha1.ClusterDecision{
 			ClusterName: cluster,
 		}
+		if !slices.Contains(existingClusterDecisions, cluster) {
+			log.Info("Cluster will be added to decisions", "cluster", cluster)
+		}
 		clusterDecisions = append(clusterDecisions, clusterDecision)
 	}
+
 	placement.Status = rolloutsv1alpha1.PlacementStatus{
 		Decisions: clusterDecisions,
 	}

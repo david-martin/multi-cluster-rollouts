@@ -1,7 +1,12 @@
 apiVersion: rollouts.example.com/v1alpha1
-kind: Placement
+kind: MovementPolicy
 metadata:
   name: example
 spec:
-  clusters:
-  - argocd-target-cluster-01
+  strategy:
+    unscheduleCondition: result[0] < 1
+    provider:
+      prometheus:
+        address: http://prometheus.example.com:9090
+        query: |
+           rate(nginx_http_requests_total[5m])
