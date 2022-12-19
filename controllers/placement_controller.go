@@ -87,7 +87,7 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 					Namespace: placement.Namespace,
 					Name:      placement.Spec.ReadyAnalysis,
 				}
-				err := r.createAnalysisRun(ctx, analysisTemplateNamespacedName)
+				err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName)
 				if err != nil {
 					log.Error(err, "unable to create AnalysisRun")
 					return ctrl.Result{}, err
@@ -109,7 +109,7 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *PlacementReconciler) createAnalysisRun(ctx context.Context, analysisTemplateNamespacedName types.NamespacedName) error {
+func (r *PlacementReconciler) CreateAnalysisRun(ctx context.Context, analysisTemplateNamespacedName types.NamespacedName) error {
 	var analysisTemplate rolloutsv1alpha1.AnalysisTemplate
 	if err := r.Get(ctx, analysisTemplateNamespacedName, &analysisTemplate); err != nil {
 		return err
