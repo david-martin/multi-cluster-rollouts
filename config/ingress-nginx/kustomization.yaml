@@ -1,0 +1,18 @@
+resources:
+  - https://github.com/kubernetes/ingress-nginx/deploy/static/provider/kind?ref=controller-v1.2.1
+
+patches:
+  - target:
+      kind: Deployment
+      name: ingress-nginx-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --report-node-internal-ip-address
+  - target:
+      kind: Deployment
+      name: ingress-nginx-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-ssl-passthrough

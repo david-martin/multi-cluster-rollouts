@@ -23,23 +23,38 @@ $(KIND):
 ARGOCD_KUBECONFIG ?= $(SELF_DIR)/kubeconfig
 export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-start: kind
-	$(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
-# TODO de-dupe
-	curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/"${NGINX_CONTOLLER_VERSION}"/deploy/static/provider/kind/deploy.yaml | sed "s/--publish-status-address=localhost/--report-node-internal-ip-address/g" | kubectl --context kind-argocd apply -f -
-	kubectl --context kind-argocd annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
+	$(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind-with-ingress.yaml --image kindest/node:v${K8S_VERSION}
+	kubectl config use-context kind-argocd
+# Deploy the ingress-controller so that Ingresses get reconciled AND allow external access from portMappings
+	kubectl config set-context --current --namespace=ingress-nginx
+	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
+	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
-	kubectl --context kind-argocd -n ingress-nginx wait --timeout=300s --for=condition=Available deployments --all
+	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+	kubectl config set-context --current --namespace=monitoring
+	$(KUSTOMIZE) build config/thanos | kubectl apply -f - 
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f -
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition | kubectl apply -f - 
 	@make -s argocd-setup
 	@make argocd-start-target-clusters
 	@make argocd-register-target-clusters
 
 argocd-start-target-clusters: kind
 	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
-# TODO de-dupe
-	curl https://raw.githubusercontent.com/kubernetes/ingress-nginx/"${NGINX_CONTOLLER_VERSION}"/deploy/static/provider/kind/deploy.yaml | sed "s/--publish-status-address=localhost/--report-node-internal-ip-address/g" | kubectl --context kind-argocd-target-cluster-01 apply -f -
-	kubectl --context kind-argocd-target-cluster-01 annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
+	kubectl config use-context kind-argocd-target-cluster-01
+# Deploy the ingress-controller so that Ingresses get reconciled. However, we don't rely on external access at this time for this cluster
+	kubectl config set-context --current --namespace=ingress-nginx
+	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
+	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
-    kubectl --context kind-argocd-target-cluster-01 -n ingress-nginx wait --timeout=300s --for=condition=Available deployments --all
+	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+	kubectl create namespace monitoring
+	kubectl config set-context --current --namespace=monitoring
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f - 
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition -x kind=Ingress | kubectl apply -f - 
+	kubectl rollout status --watch --timeout=90s deployment/prometheus-operator
+	kubectl rollout status --watch --timeout=90s statefulset/prometheus-k8s
+	kubectl port-forward svc/prometheus-k8s 9090:9090 > /dev/null  2>&1 &
 
 argocd-register-target-clusters: kustomize
 	kind get kubeconfig --internal --name argocd-target-cluster-01 > argocd-target-cluster-01.kubeconfig
@@ -64,20 +79,21 @@ argocd-password:
 	@echo $(ARGOCD_PASSWD)
 
 argocd-login: argocd
-	@$(ARGOCD) login localhost:8443 --insecure --username admin --password $(ARGOCD_PASSWD) > /dev/null
+	@$(ARGOCD) login argocd.172.18.0.2.nip.io:443 --insecure --username admin --password $(ARGOCD_PASSWD) > /dev/null
 
 argocd-setup: export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-setup: kustomize
 	$(KUSTOMIZE) build $(SELF_DIR)config/argocd-install | $(KFILT) -i kind=CustomResourceDefinition | kubectl apply -f -
 	$(KUSTOMIZE) build $(SELF_DIR)config/argocd-install | kubectl apply -f -
 	kubectl -n argocd wait deployment argocd-server --for condition=Available=True --timeout=90s
-	kubectl port-forward svc/argocd-server -n argocd 8444:443 > /dev/null  2>&1 &
-	@echo -ne "\n\n\tConnect to ArgoCD UI in https://localhost:8444\n\n"
+
+	@echo -ne "\n\n\tConnect to ArgoCD UI in https://argocd.172.18.0.2.nip.io\n\n"
 	@echo -ne "\t\tUser: admin\n"
 	@echo -ne "\t\tPassword: "
 	@make -s argocd-password
 	@echo
 
+# 	kubectl port-forward svc/argocd-server -n argocd 8444:443 > /dev/null  2>&1 &
 argocd-port-forward-stop:
 	pkill kubectl
 
@@ -89,3 +105,7 @@ argocd: $(ARGOCD) ## Download argocd CLI locally if necessary
 $(ARGOCD):
 	curl -sL $(ARGOCD_DOWNLOAD_URL) -o $(ARGOCD)
 	chmod +x $(ARGOCD)
+
+
+# kubectl port-forward svc/prometheus-k8s -n monitoring 9090:9090 > /dev/null  2>&1 &
+# kubectl port-forward svc/thanos-query -n monitoring 9091:9090 > /dev/null  2>&1 &

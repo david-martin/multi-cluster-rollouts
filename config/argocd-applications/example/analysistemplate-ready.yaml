@@ -7,6 +7,6 @@ spec:
     successCondition: result[0] > 0
     provider:
       prometheus:
-        address: http://prometheus.example.com:9090
+        address: http://thanos-query.172.18.0.2.nip.io/
         query: |
-          rate(nginx_http_requests_total[5m])
+          kube_deployment_status_replicas_ready{namespace="argocd-test-multi-cluster-ingress"}

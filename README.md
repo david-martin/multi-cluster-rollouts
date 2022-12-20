@@ -33,5 +33,5 @@ kubectl config set-context --current --namespace=argocd
 kubectl edit placement example
 ```
 
-You can see the Applications being created/synced/deleted from the ArgoCD UI at https://localhost:8443
+You can see the Applications being created/synced/deleted from the ArgoCD UI at https://argocd.172.18.0.2.nip.io
 The admin password can be retrieved with `make argocd-password`
