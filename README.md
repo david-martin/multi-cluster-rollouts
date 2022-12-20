@@ -18,6 +18,11 @@ Create the example ApplicationSet
 make argocd-create-example-applicationset
 ```
 
+Re-register the target clusters (Issue with x509 cert error unless we do this again)
+```
+make argocd-register-target-clusters
+```
+
 Start the controller locally
 ```
 make run

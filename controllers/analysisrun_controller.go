@@ -127,6 +127,7 @@ func (r *AnalysisRunReconciler) ExecuteAndEvaluate(ctx context.Context, metric r
 		measurement,
 	}
 	metricResult := rolloutsv1alpha1.MetricResult{
+		Phase:        newStatus,
 		Count:        1,
 		Measurements: measurements,
 		Successful:   1,

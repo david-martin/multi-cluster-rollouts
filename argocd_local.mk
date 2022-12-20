@@ -34,7 +34,8 @@ argocd-start: kind
 	kubectl config set-context --current --namespace=monitoring
 	$(KUSTOMIZE) build config/thanos | kubectl apply -f - 
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f -
-	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition | kubectl apply -f - 
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition | kubectl apply -f -
+	kubectl patch prometheus k8s --type='merge' -p '{"spec":{"externalLabels":{"cluster":"in-cluster"}}}'
 	@make -s argocd-setup
 	@make argocd-start-target-clusters
 	@make argocd-register-target-clusters
@@ -51,7 +52,8 @@ argocd-start-target-clusters: kind
 	kubectl create namespace monitoring
 	kubectl config set-context --current --namespace=monitoring
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f - 
-	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition -x kind=Ingress | kubectl apply -f - 
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition -x kind=Ingress | kubectl apply -f -
+	kubectl patch prometheus k8s --type='merge' -p '{"spec":{"externalLabels":{"cluster":"argocd-target-cluster-01"}}}'
 	kubectl rollout status --watch --timeout=90s deployment/prometheus-operator
 	kubectl rollout status --watch --timeout=90s statefulset/prometheus-k8s
 	kubectl port-forward svc/prometheus-k8s 9090:9090 > /dev/null  2>&1 &
