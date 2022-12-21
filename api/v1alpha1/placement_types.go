@@ -58,7 +58,13 @@ type ClusterDecision struct {
 	// +required
 	ClusterName string `json:"clusterName"`
 
-	PendingRemoval bool `json:"pendingRemoval"`
+	// Name of AnalysisRun that should be successful
+	// before removing this cluster decision
+	PendingRemoval string `json:"pendingRemoval,omitempty"`
+
+	// Name of AnalysisRun that should be successful
+	// before this cluster decision is deemed 'ready'
+	PendingReady string `json:"pendingReady,omitempty"`
 }
 
 //+kubebuilder:object:root=true

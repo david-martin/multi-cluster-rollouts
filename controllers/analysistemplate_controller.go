@@ -58,7 +58,8 @@ func (r *AnalysisTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate)
+	// log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate)
+	log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate.ObjectMeta.Name)
 
 	return ctrl.Result{}, nil
 }

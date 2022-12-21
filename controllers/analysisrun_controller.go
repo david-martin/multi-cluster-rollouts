@@ -186,6 +186,7 @@ func (r *AnalysisRunReconciler) ExecuteAndEvaluate(ctx context.Context, metric r
 	if newStatus == rolloutsv1alpha1.AnalysisPhaseSuccessful {
 		status.Phase = newStatus
 	} else {
+		// TODO: Update overall phase to failed if max count is reached
 		status.Phase = rolloutsv1alpha1.AnalysisPhasePending
 	}
 

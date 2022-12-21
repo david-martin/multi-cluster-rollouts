@@ -62,11 +62,16 @@ spec:
                     clusterName:
                       description: ClusterName is the name of the ArgoCD cluster.
                       type: string
+                    pendingReady:
+                      description: Name of AnalysisRun that should be successful before
+                        this cluster decision is deemed 'ready'
+                      type: string
                     pendingRemoval:
-                      type: boolean
+                      description: Name of AnalysisRun that should be successful before
+                        removing this cluster decision
+                      type: string
                   required:
                   - clusterName
-                  - pendingRemoval
                   type: object
                 type: array
             required:
