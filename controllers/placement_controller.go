@@ -67,21 +67,44 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	// Update status with decisions
 	existingClusters := placement.Spec.Clusters
 	existingClusterDecisions := []string{}
+	clusterDecisions := []rolloutsv1alpha1.ClusterDecision{}
+
 	for _, ecd := range placement.Status.Decisions {
-		if !slices.Contains(existingClusters, ecd.ClusterName) {
+		if ecd.PendingRemoval {
+			log.Info("Cluster pending removal from decisions", "cluster", ecd.ClusterName)
+			clusterDecisions = append(clusterDecisions, ecd)
+		} else if !slices.Contains(existingClusters, ecd.ClusterName) {
 			log.Info("Cluster will be removed from decisions", "cluster", ecd.ClusterName)
+			if placement.Spec.RemoveAnalysis != "" {
+				log.Info("Creating AnalysisRun", "cluster", ecd.ClusterName, "analysisTemplate", placement.Spec.RemoveAnalysis)
+				analysisTemplateNamespacedName := types.NamespacedName{
+					Namespace: placement.Namespace,
+					Name:      placement.Spec.RemoveAnalysis,
+				}
+				err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName)
+				if err != nil {
+					log.Error(err, "unable to create AnalysisRun")
+					return ctrl.Result{}, err
+				}
+			}
+
+			// Leave cluster in decisions until AnalysisRun is successful
+			ecd.PendingRemoval = true
+			// TODO: Remove clusterDecision when AnalysisRun is successful
+			clusterDecisions = append(clusterDecisions, ecd)
 		}
 		existingClusterDecisions = append(existingClusterDecisions, ecd.ClusterName)
 	}
 
-	clusterDecisions := []rolloutsv1alpha1.ClusterDecision{}
 	for _, cluster := range existingClusters {
 		clusterDecision := rolloutsv1alpha1.ClusterDecision{
-			ClusterName: cluster,
+			ClusterName:    cluster,
+			PendingRemoval: false,
 		}
 		if !slices.Contains(existingClusterDecisions, cluster) {
 			log.Info("Cluster will be added to decisions", "cluster", cluster)
 			if placement.Spec.ReadyAnalysis != "" {
+				// TODO: Allow for a cluster going from pendingRemoval to being added back
 				log.Info("Creating AnalysisRun", "cluster", cluster, "analysisTemplate", placement.Spec.ReadyAnalysis)
 				analysisTemplateNamespacedName := types.NamespacedName{
 					Namespace: placement.Namespace,
@@ -94,13 +117,26 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				}
 			}
 		}
-		clusterDecisions = append(clusterDecisions, clusterDecision)
+		// Update existing cluster decision for this cluster if there is one e.g. previously pending removal
+		updatedExistingDecision := false
+		for i, decision := range clusterDecisions {
+			if decision.ClusterName == cluster {
+				clusterDecisions[i] = clusterDecision
+				updatedExistingDecision = true
+				break
+			}
+		}
+		// Otherwise, add the decision
+		if !updatedExistingDecision {
+			clusterDecisions = append(clusterDecisions, clusterDecision)
+		}
 	}
 
 	placement.Status = rolloutsv1alpha1.PlacementStatus{
 		Decisions: clusterDecisions,
 	}
 
+	log.Info("Updating Placement status", "decisions", placement.Status.Decisions)
 	if err := r.Status().Update(ctx, &placement); err != nil {
 		log.Error(err, "unable to update Placement status")
 		return ctrl.Result{}, err

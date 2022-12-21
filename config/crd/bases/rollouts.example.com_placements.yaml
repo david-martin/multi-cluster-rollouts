@@ -44,6 +44,11 @@ spec:
                 description: Name of AnalysisTemplate for analysing if the placement
                   of an Application is ready
                 type: string
+              removeAnalysis:
+                description: 'TODO: reference to object intead of object name? Name
+                  of AnalysisTemplate for analysing if the placement of an Application
+                  is ready'
+                type: string
             type: object
           status:
             description: PlacementStatus defines the observed state of Placement
@@ -57,8 +62,11 @@ spec:
                     clusterName:
                       description: ClusterName is the name of the ArgoCD cluster.
                       type: string
+                    pendingRemoval:
+                      type: boolean
                   required:
                   - clusterName
+                  - pendingRemoval
                   type: object
                 type: array
             required:

@@ -6,3 +6,4 @@ resources:
   - placement-configmap.yaml
   - placement.yaml
   - analysistemplate-ready.yaml
+  - analysistemplate-remove.yaml

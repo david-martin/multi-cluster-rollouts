@@ -1,7 +1,7 @@
 apiVersion: rollouts.example.com/v1alpha1
 kind: AnalysisTemplate
 metadata:
-  name: example-ready-analysis
+  name: example-remove-analysis
 spec:
   metric:
     successCondition: result[0] > 0
@@ -9,4 +9,4 @@ spec:
       prometheus:
         address: http://thanos-query.172.18.0.2.nip.io/
         query: |
-          rate(nginx_http_requests_total[5m])
+          count(kube_deployment_status_replicas_ready{namespace="argocd-test-multi-cluster-ingress"}) > 2

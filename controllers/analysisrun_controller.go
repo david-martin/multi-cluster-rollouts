@@ -75,19 +75,40 @@ func (r *AnalysisRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// on deleted requests.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun)
+	// log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun)
+	log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun.ObjectMeta.Name)
 
 	if analysisRun.Status.Phase.Completed() {
+		log.Info("AnalysisRun already complete. Ignoring", "analysisRun", analysisRun.ObjectMeta.Name)
 		return ctrl.Result{}, nil
 	}
-	// There is no pending or running phase at this time.
+
+	// Reached hardcoded limit of 5 attempts
+	if analysisRun.Status.MetricResults != nil && len(analysisRun.Status.MetricResults) > 0 && analysisRun.Status.MetricResults[0].Count >= 5 {
+		log.Info("AnalysisRun reached count limit. Ignoring", "analysisRun", analysisRun.ObjectMeta.Name, "count", analysisRun.Status.MetricResults[0].Count)
+		return ctrl.Result{}, nil
+	}
+
+	if len(analysisRun.Status.MetricResults) > 0 {
+		// check if we should defer measurement as it's too soon since previous
+		previousMeasurement := analysisRun.Status.MetricResults[0].Measurements[len(analysisRun.Status.MetricResults[0].Measurements)-1]
+		waitTime := previousMeasurement.FinishedAt.Add(5 * time.Second)
+		currentTime := time.Now()
+		if currentTime.Before(waitTime) {
+			requeueAfter := waitTime.Sub(currentTime)
+			log.Info("Not enough time elapsed since previous AnalysisRun measurement taken. Requeueing", "analysisRun", analysisRun.ObjectMeta.Name, "requeueAfter", requeueAfter)
+			return ctrl.Result{RequeueAfter: requeueAfter}, nil
+		}
+	}
+
 	// Execute query and evalaate success condition here
-	status, err := r.ExecuteAndEvaluate(ctx, analysisRun.Spec.Metric)
+	status, err := r.ExecuteAndEvaluate(ctx, analysisRun.Spec.Metric, analysisRun.Status)
 	if err != nil {
 		log.Error(err, "Error executing and evaluating")
 		return ctrl.Result{}, err
 	}
 	analysisRun.Status = status
+
 	if err := r.Status().Update(ctx, &analysisRun); err != nil {
 		log.Error(err, "unable to update AnalysisRun status")
 		return ctrl.Result{}, err
@@ -96,12 +117,16 @@ func (r *AnalysisRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	return ctrl.Result{}, nil
 }
 
-func (r *AnalysisRunReconciler) ExecuteAndEvaluate(ctx context.Context, metric rolloutsv1alpha1.Metric) (rolloutsv1alpha1.AnalysisRunStatus, error) {
+func (r *AnalysisRunReconciler) ExecuteAndEvaluate(ctx context.Context, metric rolloutsv1alpha1.Metric, existingStatus rolloutsv1alpha1.AnalysisRunStatus) (rolloutsv1alpha1.AnalysisRunStatus, error) {
+	startedAt := existingStatus.StartedAt
+	if startedAt == nil {
+		startedAt = &metav1.Time{Time: time.Now()}
+	}
 	status := rolloutsv1alpha1.AnalysisRunStatus{
-		StartedAt: &metav1.Time{Time: time.Now()},
+		StartedAt: startedAt,
 	}
 
-	// Only try once, for now
+	// Take a new measurement
 	measurement := rolloutsv1alpha1.Measurement{
 		StartedAt: &metav1.Time{Time: time.Now()},
 	}
@@ -119,39 +144,51 @@ func (r *AnalysisRunReconciler) ExecuteAndEvaluate(ctx context.Context, metric r
 		return rolloutsv1alpha1.AnalysisRunStatus{}, err
 	}
 	newValue, newStatus, err := r.processResponse(metric, response)
+	if err != nil {
+		log.Log.Error(err, "Error processing Prometheus response")
+	}
 	measurement.Value = newValue
 
 	measurement.FinishedAt = &metav1.Time{Time: time.Now()}
 	measurement.Phase = newStatus
-	measurements := []rolloutsv1alpha1.Measurement{
-		measurement,
+	// TODO: Refactor existingStatus.MetricResults checks duplication
+	var measurements []rolloutsv1alpha1.Measurement
+	if len(existingStatus.MetricResults) > 0 {
+		measurements = existingStatus.MetricResults[0].Measurements
+	} else {
+		measurements = []rolloutsv1alpha1.Measurement{}
+	}
+	measurements = append(measurements, measurement)
+	var existingCount int32
+	if len(existingStatus.MetricResults) > 0 {
+		existingCount = existingStatus.MetricResults[0].Count
+	} else {
+		existingCount = 0
+	}
+	successful := int32(0)
+	if newStatus == rolloutsv1alpha1.AnalysisPhaseSuccessful {
+		// TODO: Figure out in what scenarios this would be incremented
+		successful = 1
 	}
 	metricResult := rolloutsv1alpha1.MetricResult{
 		Phase:        newStatus,
-		Count:        1,
 		Measurements: measurements,
-		Successful:   1,
+		Successful:   successful,
+		Count:        existingCount + 1,
 	}
 
-	/*
-		status:
-		  metricResults:
-		  - count: 1
-		    measurements:
-		    - finishedAt: "2021-09-08T19:15:49Z"
-		      phase: Successful
-		      startedAt: "2021-09-08T19:15:49Z"
-		      value: '[]'
-		    name: success-rate
-		    phase: Successful
-		    successful: 1
-		  phase: Successful
-		  startedAt:  "2021-09-08T19:15:49Z"
-	*/
+	// Only work with 1 MetricResult (with potentially mulitple measurements) at this time
 	status.MetricResults = []rolloutsv1alpha1.MetricResult{
 		metricResult,
 	}
-	status.Phase = rolloutsv1alpha1.AnalysisPhaseSuccessful
+
+	// Simplistic approach to overall status check
+	if newStatus == rolloutsv1alpha1.AnalysisPhaseSuccessful {
+		status.Phase = newStatus
+	} else {
+		status.Phase = rolloutsv1alpha1.AnalysisPhasePending
+	}
+
 	return status, nil
 }
 

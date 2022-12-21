@@ -31,6 +31,10 @@ type PlacementSpec struct {
 	// Static list of ArgoCD clusters
 	Clusters []string `json:"clusters,omitempty"`
 
+	// TODO: reference to object intead of object name?
+	// Name of AnalysisTemplate for analysing if the placement of an Application is ready
+	RemoveAnalysis string `json:"removeAnalysis,omitempty"`
+
 	// Name of AnalysisTemplate for analysing if the placement of an Application is ready
 	ReadyAnalysis string `json:"readyAnalysis,omitempty"`
 }
@@ -53,6 +57,8 @@ type ClusterDecision struct {
 	// +kubebuilder:validation:Required
 	// +required
 	ClusterName string `json:"clusterName"`
+
+	PendingRemoval bool `json:"pendingRemoval"`
 }
 
 //+kubebuilder:object:root=true
