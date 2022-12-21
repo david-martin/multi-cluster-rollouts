@@ -144,6 +144,7 @@ func (r *AnalysisRunReconciler) ExecuteAndEvaluate(ctx context.Context, metric r
 		return rolloutsv1alpha1.AnalysisRunStatus{}, err
 	}
 	newValue, newStatus, err := r.processResponse(metric, response)
+	log.Log.Info("Prometheus response", "newValue", newValue, "newStatus", newStatus)
 	if err != nil {
 		log.Log.Error(err, "Error processing Prometheus response")
 	}
