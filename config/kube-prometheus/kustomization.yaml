@@ -28,3 +28,19 @@ patches:
         name: k8s
       spec:
         replicas: 1
+  - target:
+      kind: ClusterRole
+      name: prometheus-k8s
+    patch: |-
+      - op: add
+        path: /rules/-
+        value:
+          apiGroups:
+            - ""
+          resources:
+            - services
+            - endpoints
+          verbs:
+            - get
+            - list
+            - watch

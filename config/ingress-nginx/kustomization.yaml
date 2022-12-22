@@ -1,5 +1,7 @@
 resources:
   - https://github.com/kubernetes/ingress-nginx/deploy/static/provider/kind?ref=controller-v1.2.1
+  - servicemonitor.yaml
+  - service-metrics.yaml
 
 patches:
   - target:
@@ -16,3 +18,32 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-ssl-passthrough
+  # - target:
+  #     kind: Deployment
+  #     name: ingress-nginx-controller
+  #   patch: |-
+  #     - op: add
+  #       path: /spec/template/spec/containers/0/args/-
+  #       value: -enable-prometheus-metrics
+  - target:
+      kind: Deployment
+      name: ingress-nginx-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/ports/-
+        value:
+          name: metrics
+          containerPort: 10254
+          protocol: TCP
+  - target:
+      kind: Service
+      name: ingress-nginx-controller
+    patch: |-
+      - op: add
+        path: /spec/ports/-
+        value:
+          name: metrics
+          port: 10254
+          protocol: TCP
+          targetPort: metrics
+
