@@ -59,7 +59,7 @@ func (r *AnalysisTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	// log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate)
-	log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate.ObjectMeta.Name)
+	log.Info("Reconcile AnalysisTemplate", "analysisTemplate", analysisTemplate.Name)
 
 	return ctrl.Result{}, nil
 }

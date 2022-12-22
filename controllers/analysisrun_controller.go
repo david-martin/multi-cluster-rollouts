@@ -76,27 +76,27 @@ func (r *AnalysisRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	// log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun)
-	log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun.ObjectMeta.Name)
+	log.Info("Reconcile AnalysisRun", "analysisRun", analysisRun.Name)
 
 	if analysisRun.Status.Phase.Completed() {
-		log.Info("AnalysisRun already complete. Ignoring", "analysisRun", analysisRun.ObjectMeta.Name)
+		log.Info("AnalysisRun already complete. Ignoring", "analysisRun", analysisRun.Name)
 		return ctrl.Result{}, nil
 	}
 
 	// Reached hardcoded limit of 5 attempts
 	if analysisRun.Status.MetricResults != nil && len(analysisRun.Status.MetricResults) > 0 && analysisRun.Status.MetricResults[0].Count >= 5 {
-		log.Info("AnalysisRun reached count limit. Ignoring", "analysisRun", analysisRun.ObjectMeta.Name, "count", analysisRun.Status.MetricResults[0].Count)
+		log.Info("AnalysisRun reached count limit. Ignoring", "analysisRun", analysisRun.Name, "count", analysisRun.Status.MetricResults[0].Count)
 		return ctrl.Result{}, nil
 	}
 
 	if len(analysisRun.Status.MetricResults) > 0 {
 		// check if we should defer measurement as it's too soon since previous
 		previousMeasurement := analysisRun.Status.MetricResults[0].Measurements[len(analysisRun.Status.MetricResults[0].Measurements)-1]
-		waitTime := previousMeasurement.FinishedAt.Add(5 * time.Second)
+		waitTime := previousMeasurement.FinishedAt.Add(10 * time.Second)
 		currentTime := time.Now()
 		if currentTime.Before(waitTime) {
 			requeueAfter := waitTime.Sub(currentTime)
-			log.Info("Not enough time elapsed since previous AnalysisRun measurement taken. Requeueing", "analysisRun", analysisRun.ObjectMeta.Name, "requeueAfter", requeueAfter)
+			log.Info("Not enough time elapsed since previous AnalysisRun measurement taken. Requeueing", "analysisRun", analysisRun.Name, "requeueAfter", requeueAfter)
 			return ctrl.Result{RequeueAfter: requeueAfter}, nil
 		}
 	}

@@ -4,7 +4,7 @@ metadata:
   name: example-remove-analysis
 spec:
   metric:
-    successCondition: result[0] > 0
+    successCondition: result[0] > 2
     provider:
       prometheus:
         address: http://thanos-query.172.18.0.2.nip.io/
