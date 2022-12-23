@@ -84,7 +84,7 @@ func (r *AnalysisRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	// Reached hardcoded limit of 5 attempts
-	if analysisRun.Status.MetricResults != nil && len(analysisRun.Status.MetricResults) > 0 && analysisRun.Status.MetricResults[0].Count >= 5 {
+	if analysisRun.Status.MetricResults != nil && len(analysisRun.Status.MetricResults) > 0 && analysisRun.Status.MetricResults[0].Count >= 20 {
 		log.Info("AnalysisRun reached count limit. Ignoring", "analysisRun", analysisRun.Name, "count", analysisRun.Status.MetricResults[0].Count)
 		return ctrl.Result{}, nil
 	}
@@ -92,7 +92,7 @@ func (r *AnalysisRunReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	if len(analysisRun.Status.MetricResults) > 0 {
 		// check if we should defer measurement as it's too soon since previous
 		previousMeasurement := analysisRun.Status.MetricResults[0].Measurements[len(analysisRun.Status.MetricResults[0].Measurements)-1]
-		waitTime := previousMeasurement.FinishedAt.Add(10 * time.Second)
+		waitTime := previousMeasurement.FinishedAt.Add(30 * time.Second)
 		currentTime := time.Now()
 		if currentTime.Before(waitTime) {
 			requeueAfter := waitTime.Sub(currentTime)

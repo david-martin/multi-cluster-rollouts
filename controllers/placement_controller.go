@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -98,7 +99,7 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 						Namespace: placement.Namespace,
 						Name:      placement.Spec.ReadyAnalysis,
 					}
-					analysisRunName, err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName, placement.Name)
+					analysisRunName, err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName, placement.Name, decision.ClusterName)
 					if err != nil {
 						log.Error(err, "unable to create AnalysisRun")
 						return ctrl.Result{}, err
@@ -138,7 +139,7 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 					Namespace: placement.Namespace,
 					Name:      placement.Spec.RemoveAnalysis,
 				}
-				analysisRunName, err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName, placement.Name)
+				analysisRunName, err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName, placement.Name, decision.ClusterName)
 				if err != nil {
 					log.Error(err, "unable to create AnalysisRun")
 					return ctrl.Result{}, err
@@ -161,7 +162,7 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 					Namespace: placement.Namespace,
 					Name:      placement.Spec.ReadyAnalysis,
 				}
-				analysisRunName, err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName, placement.Name)
+				analysisRunName, err := r.CreateAnalysisRun(ctx, analysisTemplateNamespacedName, placement.Name, cluster)
 				if err != nil {
 					log.Error(err, "unable to create AnalysisRun")
 					return ctrl.Result{}, err
@@ -185,7 +186,7 @@ func (r *PlacementReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func (r *PlacementReconciler) CreateAnalysisRun(ctx context.Context, analysisTemplateNamespacedName types.NamespacedName, placementName string) (string, error) {
+func (r *PlacementReconciler) CreateAnalysisRun(ctx context.Context, analysisTemplateNamespacedName types.NamespacedName, placementName string, cluster string) (string, error) {
 	var analysisTemplate rolloutsv1alpha1.AnalysisTemplate
 	if err := r.Get(ctx, analysisTemplateNamespacedName, &analysisTemplate); err != nil {
 		return "", err
@@ -203,6 +204,7 @@ func (r *PlacementReconciler) CreateAnalysisRun(ctx context.Context, analysisTem
 			Metric: analysisTemplate.Spec.Metric,
 		},
 	}
+	analysisRun.Spec.Metric.Provider.Prometheus.Query = strings.Replace(analysisRun.Spec.Metric.Provider.Prometheus.Query, "$cluster", cluster, -1)
 
 	if err := r.Client.Create(ctx, &analysisRun); err != nil {
 		return "", err

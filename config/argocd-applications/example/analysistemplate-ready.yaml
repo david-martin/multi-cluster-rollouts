@@ -4,9 +4,9 @@ metadata:
   name: example-ready-analysis
 spec:
   metric:
-    successCondition: result[0] > 0
+    successCondition: result[0] > 0.5
     provider:
       prometheus:
         address: http://thanos-query.172.18.0.2.nip.io/
         query: |
-          count(kube_deployment_status_replicas_ready{namespace="argocd-test-multi-cluster-ingress"}) or vector(0)
+          sum(rate(nginx_ingress_controller_request_size_count{cluster="$cluster",service="ingress-nginx-controller",ingress="argocd-test-multi-cluster-ingress"}[1m])) by(ingress)
