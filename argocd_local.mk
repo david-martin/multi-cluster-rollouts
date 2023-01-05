@@ -25,12 +25,8 @@ export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-start: kind
 	$(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind-with-ingress.yaml --image kindest/node:v${K8S_VERSION}
 	kubectl config use-context kind-argocd
-# Deploy the ingress-controller so that Ingresses get reconciled AND allow external access from portMappings
-	kubectl config set-context --current --namespace=ingress-nginx
-	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
-	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
-	@echo "Waiting for deployments to be ready ..."
-	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+# Deploy monitoring stack
+	kubectl create namespace monitoring
 	kubectl config set-context --current --namespace=monitoring
 	$(KUSTOMIZE) build config/thanos | kubectl apply -f - 
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f -
@@ -39,16 +35,17 @@ argocd-start: kind
 	@make -s argocd-setup
 	@make argocd-start-target-clusters
 	@make argocd-register-target-clusters
-
-argocd-start-target-clusters: kind
-	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
-	kubectl config use-context kind-argocd-target-cluster-01
-# Deploy the ingress-controller so that Ingresses get reconciled. However, we don't rely on external access at this time for this cluster
+# Deploy the ingress-controller so that Ingresses get reconciled AND allow external access from portMappings
 	kubectl config set-context --current --namespace=ingress-nginx
 	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
 	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
 	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+
+argocd-start-target-clusters: kind
+	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
+	kubectl config use-context kind-argocd-target-cluster-01
+# Deploy monitoring stack
 	kubectl create namespace monitoring
 	kubectl config set-context --current --namespace=monitoring
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f - 
@@ -57,6 +54,11 @@ argocd-start-target-clusters: kind
 	kubectl rollout status --watch --timeout=90s deployment/prometheus-operator
 	kubectl rollout status --watch --timeout=90s statefulset/prometheus-k8s
 	kubectl port-forward svc/prometheus-k8s 9090:9090 > /dev/null  2>&1 &
+# Deploy the ingress-controller so that Ingresses get reconciled. However, we don't rely on external access at this time for this cluster
+	kubectl config set-context --current --namespace=ingress-nginx
+	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
+	@echo "Waiting for deployments to be ready ..."
+	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
 
 argocd-register-target-clusters: kustomize
 	kind get kubeconfig --internal --name argocd-target-cluster-01 > argocd-target-cluster-01.kubeconfig
