@@ -24,10 +24,10 @@ ARGOCD_KUBECONFIG ?= $(SELF_DIR)/kubeconfig
 export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-start: kind
 	$(KIND) create cluster --name argocd --wait 5m --config $(SELF_DIR)kind-with-ingress.yaml --image kindest/node:v${K8S_VERSION}
-	kubectl config use-context kind-argocd
 # Deploy monitoring stack
+	kubectl config use-context kind-argocd
 	kubectl create namespace monitoring
-	kubectl config set-context --current --namespace=monitoring
+	kubectl config set-context kind-argocd --namespace=monitoring && kubectl config use-context kind-argocd
 	$(KUSTOMIZE) build config/thanos | kubectl apply -f - 
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f -
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition | kubectl apply -f -
@@ -36,7 +36,7 @@ argocd-start: kind
 	@make argocd-start-target-clusters
 	@make argocd-register-target-clusters
 # Deploy the ingress-controller so that Ingresses get reconciled AND allow external access from portMappings
-	kubectl config set-context --current --namespace=ingress-nginx
+	kubectl config set-context kind-argocd --namespace=ingress-nginx && kubectl config use-context kind-argocd
 	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
 	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
@@ -44,19 +44,21 @@ argocd-start: kind
 
 argocd-start-target-clusters: kind
 	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
-	kubectl config use-context kind-argocd-target-cluster-01
 # Deploy monitoring stack
+	kubectl config use-context kind-argocd-target-cluster-01
 	kubectl create namespace monitoring
-	kubectl config set-context --current --namespace=monitoring
-	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f - 
+	kubectl config set-context kind-argocd-target-cluster-01 --namespace=monitoring && kubectl config use-context kind-argocd-target-cluster-01
+	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -i kind=CustomResourceDefinition | kubectl create -f -
+# Leave out prometheus ingress in this cluster as it will clash with first cluster. Instead use port-forward to access prometheus
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition -x kind=Ingress | kubectl apply -f -
 	kubectl patch prometheus k8s --type='merge' -p '{"spec":{"externalLabels":{"cluster":"argocd-target-cluster-01"}}}'
 	kubectl rollout status --watch --timeout=90s deployment/prometheus-operator
 	kubectl rollout status --watch --timeout=90s statefulset/prometheus-k8s
 	kubectl port-forward svc/prometheus-k8s 9090:9090 > /dev/null  2>&1 &
 # Deploy the ingress-controller so that Ingresses get reconciled. However, we don't rely on external access at this time for this cluster
-	kubectl config set-context --current --namespace=ingress-nginx
-	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
+	kubectl config set-context kind-argocd-target-cluster-01 --namespace=ingress-nginx && kubectl config use-context kind-argocd-target-cluster-01
+	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f -
+	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
 	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
 
@@ -89,7 +91,7 @@ argocd-setup: export KUBECONFIG=$(ARGOCD_KUBECONFIG)
 argocd-setup: kustomize
 	$(KUSTOMIZE) build $(SELF_DIR)config/argocd-install | $(KFILT) -i kind=CustomResourceDefinition | kubectl apply -f -
 	$(KUSTOMIZE) build $(SELF_DIR)config/argocd-install | kubectl apply -f -
-	kubectl -n argocd wait deployment argocd-server --for condition=Available=True --timeout=90s
+	kubectl -n argocd wait deployment argocd-server --for condition=Available=True --timeout=120s
 
 	@echo -ne "\n\n\tConnect to ArgoCD UI in https://argocd.172.18.0.2.nip.io\n\n"
 	@echo -ne "\t\tUser: admin\n"

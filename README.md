@@ -40,3 +40,15 @@ kubectl edit placement example
 
 You can see the Applications being created/synced/deleted from the ArgoCD UI at https://argocd.172.18.0.2.nip.io
 The admin password can be retrieved with `make argocd-password`
+
+You can send traffic to either instance of the example application with curl:
+
+Cluster 1 (in-cluster)
+```
+while true;do curl --resolve argocd-test-multi-cluster-ingress.dev.hcpapps.net:80:172.18.0.2 http://argocd-test-multi-cluster-ingress.dev.hcpapps.net && sleep 1;done
+```
+
+Cluster 2 (argocd-target-cluster-01)
+```
+while true;do curl --resolve argocd-test-multi-cluster-ingress.dev.hcpapps.net:80:172.18.0.3 http://argocd-test-multi-cluster-ingress.dev.hcpapps.net && sleep 1;done
+```
