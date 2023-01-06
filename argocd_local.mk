@@ -40,7 +40,7 @@ argocd-start: kind
 	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f - 
 	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
-	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
 
 argocd-start-target-clusters: kind
 	$(KIND) create cluster --name argocd-target-cluster-01 --wait 5m --config $(SELF_DIR)kind.yaml --image kindest/node:v${K8S_VERSION}
@@ -52,15 +52,15 @@ argocd-start-target-clusters: kind
 # Leave out prometheus ingress in this cluster as it will clash with first cluster. Instead use port-forward to access prometheus
 	$(KUSTOMIZE) build config/kube-prometheus | $(KFILT) -x kind=CustomResourceDefinition -x kind=Ingress | kubectl apply -f -
 	kubectl patch prometheus k8s --type='merge' -p '{"spec":{"externalLabels":{"cluster":"argocd-target-cluster-01"}}}'
-	kubectl rollout status --watch --timeout=90s deployment/prometheus-operator
-	kubectl rollout status --watch --timeout=90s statefulset/prometheus-k8s
+	kubectl rollout status --watch --timeout=120s deployment/prometheus-operator
+	kubectl rollout status --watch --timeout=120s statefulset/prometheus-k8s
 	kubectl port-forward svc/prometheus-k8s 9090:9090 > /dev/null  2>&1 &
 # Deploy the ingress-controller so that Ingresses get reconciled. However, we don't rely on external access at this time for this cluster
 	kubectl config set-context kind-argocd-target-cluster-01 --namespace=ingress-nginx && kubectl config use-context kind-argocd-target-cluster-01
 	$(KUSTOMIZE) build config/ingress-nginx | kubectl apply -f -
 	kubectl annotate ingressclass nginx "ingressclass.kubernetes.io/is-default-class=true"
 	@echo "Waiting for deployments to be ready ..."
-	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+	kubectl -n ingress-nginx wait --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
 
 argocd-register-target-clusters: kustomize
 	kind get kubeconfig --internal --name argocd-target-cluster-01 > argocd-target-cluster-01.kubeconfig
