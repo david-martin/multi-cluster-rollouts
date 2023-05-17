@@ -1,6 +1,14 @@
 # multi-cluster-rollouts
 An experiment at providing rollout like features in a multi-cluster environment. Leverages ArogCD ApplicationSets
 
+*Demo Video*
+
+[![Demo Video](http://img.youtube.com/vi/SmlwSn9RfT4/0.jpg)](http://www.youtube.com/watch?v=SmlwSn9RfT4)
+
+*Architecture*
+
+<img src="arch.png" alt="arch" width="800"/>
+
 ## Local setup
 
 Create clusters & deploy ArgoCD
